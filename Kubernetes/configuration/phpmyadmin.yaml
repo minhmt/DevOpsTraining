@@ -1,0 +1,73 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpmyadmin-deployment
+  labels:
+    app:  phpmyadmin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phpmyadmin
+  template:
+    metadata:
+      labels:
+        app:  phpmyadmin
+    spec:
+      containers:
+      - name: phpmyadmin
+        image: phpmyadmin
+        ports:          
+            - containerPort: 8080
+        env:
+        - name: MYSQL_ROOT_PASSWORD 
+          valueFrom: 
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-root-password
+        - name: MYSQL_USER 
+          valueFrom: 
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-user
+        - name: MYSQL_PASSWORD 
+          valueFrom: 
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password
+        - name: PMA_USER  
+          valueFrom: 
+            secretKeyRef:
+              name: phpmyadmin-secret
+              key: pma-user
+        - name: PMA_PASSWORD  
+          valueFrom: 
+            secretKeyRef:
+              name: phpmyadmin-secret
+              key: pma-password
+        - name: PMA_HOST  
+          valueFrom: 
+            configMapKeyRef:
+              name: mysql-configmap
+              key: database_url
+        - name: APACHE_PORT   
+          valueFrom: 
+            configMapKeyRef:
+              name: apache-configmap
+              key: httpd_port
+          
+---
+apiVersion: v1 
+kind: Service
+metadata: 
+  name: phpmyadmin-service
+spec:
+  selector:
+    app: phpmyadmin
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30007
